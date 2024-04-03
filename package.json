@@ -1,0 +1,53 @@
+{
+  "name": "symfonyYamlTranslationsResolver",
+  "displayName": "YAML Translations Resolver (Symfony)",
+  "publisher": "Chaxwell",
+  "author": {
+    "name": "Chaxwell"
+  },
+  "license": "MIT-X11",
+  "description": "Alpha version",
+  "version": "0.9.0-alpha",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Chaxwell/vscode-extension-symfonyYamlTranslationsResolver"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "symfonyYamlTranslationsResolver.clearCache",
+        "title": "YAML Translations Resolver - Clear cache"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "pnpm run compile && pnpm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^7.4.0",
+    "@typescript-eslint/parser": "^7.4.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.3.3",
+    "@vscode/test-cli": "^0.0.8",
+    "@vscode/test-electron": "^2.3.9"
+  }
+}
