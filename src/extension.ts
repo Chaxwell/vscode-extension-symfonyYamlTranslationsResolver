@@ -1,40 +1,41 @@
 import * as vscode from 'vscode';
 import { completionProvider, documentLinkProvider } from './provider';
-import { CONFIG_CACHE_KEY, DATA_CACHE_KEY } from './constants';
 import { cache } from './cache';
 import { getConfiguration } from './configuration';
-import { extractData } from './data-fetcher';
+import { SuggestionsByFileMap, extractData } from './data-fetcher';
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	console.log('symfonyYamlTranslationsResolver initialization - ALPHA VERSION')
 
+	const outputChannel = vscode.window.createOutputChannel("Symfony YAML Translations Resolver");
 	const cachePool = cache(context)
-    const config = getConfiguration(context)
-    const suggestions = extractData(
-        cachePool,
-        vscode.Uri.file(`${config.workspacePath}/translations/messages.fr.yaml`)
-    )
+	const config = getConfiguration(context)
+	const suggestionsByFile: SuggestionsByFileMap = new Map()
+	const translationsFiles = await vscode.workspace.findFiles(config.translationsFilePattern)
+
+	for (const fileUri of translationsFiles) {
+		suggestionsByFile.set(fileUri, extractData(cachePool, fileUri))
+	}
 
 	context.subscriptions.push(
 		vscode.languages.registerDocumentLinkProvider(
 			{ pattern: '**' },
-			documentLinkProvider(config, suggestions)
+			documentLinkProvider(config, suggestionsByFile)
 		)
 	)
 	context.subscriptions.push(
 		vscode.languages.registerCompletionItemProvider(
 			[{ pattern: '**' }],
-			completionProvider(suggestions),
+			completionProvider(config, suggestionsByFile),
 			"'"
 		)
 	)
 	context.subscriptions.push(
 		vscode.commands.registerCommand('symfonyYamlTranslationsResolver.clearCache', () => {
-			cachePool.clear(CONFIG_CACHE_KEY)
-			cachePool.clear(DATA_CACHE_KEY)
+			cachePool.clearAll()
 			console.log("Cache cleared!")
 			vscode.window.showInformationMessage("Cache cleared!")
-			vscode.window.createOutputChannel("YAML Link Resolver").append("Cache cleared!")
+			outputChannel.appendLine("Cache cleared!")
 		})
 	)
 }

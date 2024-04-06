@@ -12,6 +12,11 @@ export const cache = (context: vscode.ExtensionContext) => {
         },
         clear: (key: string) => {
             return context.globalState.update(key, undefined)
+        },
+        clearAll: () => {
+            context.globalState.keys().forEach(key => {
+                context.globalState.update(key, undefined)
+            })
         }
     }
 }

@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
-import { Suggestion, SuggestionMap, extractData } from './data-fetcher';
-import { Configuration, getConfiguration } from './configuration';
-import { cache } from './cache';
+import { Suggestion, SuggestionsByFileMap } from './data-fetcher';
+import { Configuration } from './configuration';
 
-export const documentLinkProvider = (config: Configuration, suggestions: SuggestionMap): vscode.DocumentLinkProvider => {
+export const documentLinkProvider = (config: Configuration, suggestionsByFile: SuggestionsByFileMap): vscode.DocumentLinkProvider => {
     return {
         provideDocumentLinks(document, token) {
             const result: vscode.DocumentLink[] = []
@@ -18,29 +17,26 @@ export const documentLinkProvider = (config: Configuration, suggestions: Suggest
                     continue
                 }
 
-                if (! suggestions.has(match)) {
-                    continue
-                }
+                for (const [file, suggestions] of suggestionsByFile) {
+                    if (! suggestions.has(match)) {
+                        continue
+                    }
 
-                const suggestion = suggestions.get(match) as Suggestion
-                const range = new vscode.Range(
-                    new vscode.Position(line.lineNumber, charactersTillMatch.length + 1),
-                    new vscode.Position(line.lineNumber, charactersTillMatch.length + match.length + 1)
-                )
-                const uri = vscode
-                    .Uri
-                    .file(
-                        `${config.workspacePath}/translations/messages.fr.yaml`
+                    const suggestion = suggestions.get(match) as Suggestion
+                    const range = new vscode.Range(
+                        new vscode.Position(line.lineNumber, charactersTillMatch.length + 1),
+                        new vscode.Position(line.lineNumber, charactersTillMatch.length + match.length + 1)
                     )
-                    .with({ fragment: `L${suggestion.line}, 1` })
+                    const link = new vscode.DocumentLink(
+                        range,
+                        file.with({ fragment: `L${suggestion.line}, 1` })
+                    );
 
-                const link = new vscode.DocumentLink(
-                    range,
-                    uri
-                );
-                link.tooltip = suggestion.text
+                    const fileName = file.fsPath.slice(config.workspacePath.length + 1)
+                    link.tooltip = `${suggestion.text} <<${fileName}>>`
 
-                result.push(link);
+                    result.push(link);
+                }
             }
 
             return result
@@ -51,7 +47,7 @@ export const documentLinkProvider = (config: Configuration, suggestions: Suggest
     }
 }
 
-export const completionProvider = (suggestions: SuggestionMap): vscode.CompletionItemProvider => {
+export const completionProvider = (config: Configuration, suggestionsByFile: SuggestionsByFileMap): vscode.CompletionItemProvider => {
     return {
         provideCompletionItems: (document, position, token, context) => {
             const range = document.lineAt(position).range
@@ -64,25 +60,38 @@ export const completionProvider = (suggestions: SuggestionMap): vscode.Completio
                 return []
             }
 
-            return Array
-                .from(suggestions.entries())
-                .filter(([key, value]) => key.startsWith(match))
-                .map(([key, value]) => {
-                    const result = new vscode.CompletionItem(
-                        {
-                            label: key,
-                            description: value.text,
-                        },
-                        vscode.CompletionItemKind.Text
-                    )
+            const result = [];
+            for (const [file, suggestions] of suggestionsByFile) {
+                const fileName = file.fsPath.slice(config.workspacePath.length + 1)
 
-                    const posStart = new vscode.Position(position.line, charactersTillMatch.length)
-                    result.range = new vscode.Range(posStart, position)
-                    result.insertText = key
-                    result.documentation = value.text
+                result.push(
+                    ...Array
+                    .from(suggestions.entries())
+                    .filter(([key, value]) => key.startsWith(match))
+                    .map(([key, value]) => {
+                        const result = new vscode.CompletionItem(
+                            {
+                                label: key,
+                                description: value.text,
+                            },
+                            vscode.CompletionItemKind.Text
+                        )
 
-                    return result
-                })
+                        const posStart = new vscode.Position(position.line, charactersTillMatch.length)
+                        result.range = new vscode.Range(posStart, position)
+                        result.insertText = key
+
+                        const documentation = new vscode.MarkdownString(`${value.text}<br><br>*${fileName}*`);
+                        documentation.supportHtml = true
+
+                        result.documentation = documentation
+
+                        return result
+                    })
+                )
+            }
+
+            return result
         },
         resolveCompletionItem: (item, token) => {
             return new Promise((resolve) => {

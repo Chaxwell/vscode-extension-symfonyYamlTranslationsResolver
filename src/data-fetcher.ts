@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import * as cp from 'child_process'
 import { Cache } from './cache'
 import { DATA_CACHE_KEY } from './constants'
+import * as hashing from 'crypto'
 
 const l = console.log
 // const yq = cp.execSync(`yq -o=json --expression="(.. | select(tag == \\"!!str\\")) |= . + \\"-_+[\\" + line + \\"]+_-\\"" ./resources/sample.yaml`)
@@ -34,25 +35,27 @@ const extractTextAndLine = (extractionSet: string): {line: number, text: string}
 
 export type Suggestion = {line: number, text: string}
 export type SuggestionMap = Map<string, Suggestion>
+export type SuggestionsByFileMap = Map<vscode.Uri, SuggestionMap>
 type SuggestionEntries = [string, Suggestion][]
 
 export const extractData = (cache: Cache, filePath: vscode.Uri): SuggestionMap => {
-    const data = cache.get<SuggestionEntries>(DATA_CACHE_KEY)
+    const cacheKey = DATA_CACHE_KEY + hashing.createHash('sha1').update(filePath.path).digest('base64');
+    const data = cache.get<SuggestionEntries>(cacheKey)
 
     if (typeof data !== 'undefined') {
-        return new Map<string, Suggestion>(data)
+        return new Map(data)
     }
 
     const yq = cp.execSync(`yq -o=json --expression="(.. | select(tag == \\"!!str\\")) |= . + \\"-_+[\\" + line + \\"]+_-\\"" ${filePath.fsPath}`)
     // const yq = cp.execSync(`yq -o=json ${filePath.fsPath}`)
-    const json = JSON.parse(yq.toString())
+    const json: {[key: string]: any} = JSON.parse(yq.toString()) ?? {}
 
-    let result: Map<string, Suggestion> = new Map()
+    let result: SuggestionMap = new Map()
     for (const [k, v] of Object.entries<object|string>(json)) {
         result = new Map([...result, ...createKeys(k, v)])
     }
 
-    cache.set(DATA_CACHE_KEY, Array.from(result.entries()))
+    cache.set(cacheKey, Array.from(result.entries()))
 
     return result
 }
