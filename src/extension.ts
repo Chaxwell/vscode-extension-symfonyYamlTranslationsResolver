@@ -1,14 +1,25 @@
 import * as vscode from 'vscode';
 import { completionProvider, documentLinkProvider } from './provider';
-import { cache } from './cache';
+import { createCache, createDataCacheKey } from './cache';
 import { getConfiguration } from './configuration';
 import { SuggestionsByFileMap, extractData } from './data-fetcher';
+import { createExtensionLog } from './utils';
 
-export async function activate(context: vscode.ExtensionContext) {
-	console.log('symfonyYamlTranslationsResolver initialization - ALPHA VERSION')
+const debounce = <T extends Function>(callback: T, delay: number) => {
+	let timer: NodeJS.Timeout
 
-	const outputChannel = vscode.window.createOutputChannel("Symfony YAML Translations Resolver");
-	const cachePool = cache(context)
+	const callable = (...args: any) => {
+		clearTimeout(timer)
+		timer = setTimeout(() => callback(...args), delay)
+	}
+
+	return <T>(<any>callable)
+}
+
+const loadDisposables = async (context: vscode.ExtensionContext) => {
+	const outputChannel = vscode.window.createOutputChannel("Symfony YAML Translations Resolver", {log: true})
+	const extensionLog = createExtensionLog(outputChannel)
+	const cachePool = createCache(context)
 	const config = getConfiguration(context)
 	const suggestionsByFile: SuggestionsByFileMap = new Map()
 	const translationsFiles = await vscode.workspace.findFiles(config.translationsFilePattern)
@@ -17,27 +28,44 @@ export async function activate(context: vscode.ExtensionContext) {
 		suggestionsByFile.set(fileUri, extractData(cachePool, fileUri))
 	}
 
-	context.subscriptions.push(
+	const suggestionsProviderDisposables = [
 		vscode.languages.registerDocumentLinkProvider(
 			{ pattern: '**' },
 			documentLinkProvider(config, suggestionsByFile)
-		)
-	)
-	context.subscriptions.push(
+		),
 		vscode.languages.registerCompletionItemProvider(
 			[{ pattern: '**' }],
 			completionProvider(config, suggestionsByFile),
 			"'"
 		)
-	)
+	];
+
+	context.subscriptions.push(...suggestionsProviderDisposables)
 	context.subscriptions.push(
 		vscode.commands.registerCommand('symfonyYamlTranslationsResolver.clearCache', () => {
 			cachePool.clearAll()
-			console.log("Cache cleared!")
-			vscode.window.showInformationMessage("Cache cleared!")
-			outputChannel.appendLine("Cache cleared!")
+			extensionLog.userLog("Cache cleared!")
 		})
 	)
+
+	const disposableListener = vscode.workspace.onDidChangeTextDocument(debounce((evt) => {
+		if (! translationsFiles.map(uri => uri.fsPath).includes(evt.document.fileName)) {
+			return;
+		}
+
+		const cachePool = createCache(context)
+		cachePool.clear(createDataCacheKey(vscode.Uri.file(evt.document.fileName)))
+
+		context.subscriptions.forEach(disposable => disposable.dispose())
+        loadDisposables(context)
+	}, 3000))
+	context.subscriptions.push(disposableListener)
+}
+
+export async function activate(context: vscode.ExtensionContext) {
+	console.log('symfonyYamlTranslationsResolver initialization - ALPHA VERSION')
+
+	loadDisposables(context)
 }
 
 // This method is called when your extension is deactivated

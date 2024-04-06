@@ -1,8 +1,6 @@
 import * as vscode from 'vscode'
 import * as cp from 'child_process'
-import { Cache } from './cache'
-import { DATA_CACHE_KEY } from './constants'
-import * as hashing from 'crypto'
+import { Cache, createDataCacheKey } from './cache'
 
 const l = console.log
 // const yq = cp.execSync(`yq -o=json --expression="(.. | select(tag == \\"!!str\\")) |= . + \\"-_+[\\" + line + \\"]+_-\\"" ./resources/sample.yaml`)
@@ -39,7 +37,7 @@ export type SuggestionsByFileMap = Map<vscode.Uri, SuggestionMap>
 type SuggestionEntries = [string, Suggestion][]
 
 export const extractData = (cache: Cache, filePath: vscode.Uri): SuggestionMap => {
-    const cacheKey = DATA_CACHE_KEY + hashing.createHash('sha1').update(filePath.path).digest('base64');
+    const cacheKey = createDataCacheKey(filePath)
     const data = cache.get<SuggestionEntries>(cacheKey)
 
     if (typeof data !== 'undefined') {
