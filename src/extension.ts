@@ -69,6 +69,30 @@ const loadDisposables = async (context: vscode.ExtensionContext) => {
 				loadDisposables(context)
 			})
 		}),
+		vscode.workspace.onDidRenameFiles(evt => {
+			evt.files.forEach(file => {
+				const oldFilename = file.oldUri.path.slice(config.workspacePath.length + 1)
+
+				// TODO Does not clear the cache
+				if (! minimatch(oldFilename, config.translationsFilePattern)) {
+					extensionLog.debugLog("Translation file renamed (1/2), old filename does not match pattern, skipping...")
+				} else {
+					extensionLog.debugLog("Translation file renamed (1/2), clearing cache...");
+					cachePool.clear(createDataCacheKey(file.oldUri))
+				}
+
+				const newFilename = file.newUri.path.slice(config.workspacePath.length + 1)
+
+				if (! minimatch(newFilename, config.translationsFilePattern)) {
+					extensionLog.debugLog("Translation file renamed (2/2), new filename does not match pattern, skipping...")
+					return
+				}
+
+				extensionLog.debugLog("Translation file renamed (2/2), adding to suggestions...")
+				context.subscriptions.forEach(disposable => disposable.dispose())
+				loadDisposables(context)
+			})
+		}),
 	]
 
 	context.subscriptions.push(...suggestionsProviderDisposables)
