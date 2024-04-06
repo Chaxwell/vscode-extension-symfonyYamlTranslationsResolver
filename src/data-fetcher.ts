@@ -2,9 +2,10 @@ import * as vscode from 'vscode'
 import * as cp from 'child_process'
 import { Cache, createDataCacheKey } from './cache'
 
-const l = console.log
-// const yq = cp.execSync(`yq -o=json --expression="(.. | select(tag == \\"!!str\\")) |= . + \\"-_+[\\" + line + \\"]+_-\\"" ./resources/sample.yaml`)
-// const json = JSON.parse(yq.toString())
+export type Suggestion = {line: number, text: string}
+export type SuggestionMap = Map<string, Suggestion>
+export type SuggestionsByFileMap = Map<vscode.Uri, SuggestionMap>
+type SuggestionEntries = [string, Suggestion][]
 
 const createKeys = (k: string, v: string|object): Map<string, {line: number, text: string}> => {
     if (typeof v === 'object') {
@@ -31,11 +32,6 @@ const extractTextAndLine = (extractionSet: string): {line: number, text: string}
     return {line, text}
 }
 
-export type Suggestion = {line: number, text: string}
-export type SuggestionMap = Map<string, Suggestion>
-export type SuggestionsByFileMap = Map<vscode.Uri, SuggestionMap>
-type SuggestionEntries = [string, Suggestion][]
-
 export const extractData = (cache: Cache, filePath: vscode.Uri): SuggestionMap => {
     const cacheKey = createDataCacheKey(filePath)
     const data = cache.get<SuggestionEntries>(cacheKey)
@@ -45,7 +41,6 @@ export const extractData = (cache: Cache, filePath: vscode.Uri): SuggestionMap =
     }
 
     const yq = cp.execSync(`yq -o=json --expression="(.. | select(tag == \\"!!str\\")) |= . + \\"-_+[\\" + line + \\"]+_-\\"" ${filePath.fsPath}`)
-    // const yq = cp.execSync(`yq -o=json ${filePath.fsPath}`)
     const json: {[key: string]: any} = JSON.parse(yq.toString()) ?? {}
 
     let result: SuggestionMap = new Map()
