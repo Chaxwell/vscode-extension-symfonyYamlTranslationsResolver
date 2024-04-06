@@ -37,29 +37,25 @@ const loadDisposables = async (context: vscode.ExtensionContext) => {
 			[{ pattern: '**' }],
 			completionProvider(config, suggestionsByFile),
 			"'"
-		)
-	];
-
-	context.subscriptions.push(...suggestionsProviderDisposables)
-	context.subscriptions.push(
+		),
 		vscode.commands.registerCommand('symfonyYamlTranslationsResolver.clearCache', () => {
 			cachePool.clearAll()
 			extensionLog.userLog("Cache cleared!")
-		})
-	)
+		}),
+		vscode.workspace.onDidChangeTextDocument(debounce((evt) => {
+			if (! translationsFiles.map(uri => uri.fsPath).includes(evt.document.fileName)) {
+				return;
+			}
 
-	const disposableListener = vscode.workspace.onDidChangeTextDocument(debounce((evt) => {
-		if (! translationsFiles.map(uri => uri.fsPath).includes(evt.document.fileName)) {
-			return;
-		}
+			const cachePool = createCache(context)
+			cachePool.clear(createDataCacheKey(vscode.Uri.file(evt.document.fileName)))
 
-		const cachePool = createCache(context)
-		cachePool.clear(createDataCacheKey(vscode.Uri.file(evt.document.fileName)))
+			context.subscriptions.forEach(disposable => disposable.dispose())
+			loadDisposables(context)
+		}, 3000)),
+	];
 
-		context.subscriptions.forEach(disposable => disposable.dispose())
-        loadDisposables(context)
-	}, 3000))
-	context.subscriptions.push(disposableListener)
+	context.subscriptions.push(...suggestionsProviderDisposables)
 }
 
 export async function activate(context: vscode.ExtensionContext) {
