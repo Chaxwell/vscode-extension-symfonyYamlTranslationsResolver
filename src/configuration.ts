@@ -2,12 +2,12 @@ import * as vscode from 'vscode';
 
 export type Configuration = {
     workspacePath: string
-    translationsFilePattern: vscode.GlobPattern
+    translationsFilePattern: string
 }
 
 export const getConfiguration = (context: vscode.ExtensionContext): Configuration => {
     const result = {
-        workspacePath: vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? "",
+        workspacePath: vscode.workspace.workspaceFolders?.[0].uri.path ?? "",
         translationsFilePattern: `translations/**/*.{yml,yaml}`
     }
 
