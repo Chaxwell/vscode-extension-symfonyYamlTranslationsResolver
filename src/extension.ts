@@ -49,9 +49,7 @@ const loadDisposables = async (context: vscode.ExtensionContext) => {
 			}
 
 			extensionLog.debugLog("Translation file changed, reloading suggestions...")
-
-			const cachePool = createCache(context)
-			cachePool.clear(createDataCacheKey(vscode.Uri.file(evt.document.fileName)))
+			cachePool.clear(createDataCacheKey(evt.document.uri))
 
 			context.subscriptions.forEach(disposable => disposable.dispose())
 			loadDisposables(context)
