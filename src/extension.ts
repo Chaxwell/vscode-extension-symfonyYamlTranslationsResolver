@@ -1,9 +1,10 @@
-import * as vscode from 'vscode';
-import { completionProvider, documentLinkProvider } from './provider';
-import { createCache, createDataCacheKey } from './cache';
-import { getConfiguration } from './configuration';
-import { SuggestionsByFileMap, extractData } from './data-fetcher';
-import { createExtensionLog } from './utils';
+import * as vscode from 'vscode'
+import { minimatch } from 'minimatch'
+import { completionProvider, documentLinkProvider } from './provider'
+import { createCache, createDataCacheKey } from './cache'
+import { getConfiguration } from './configuration'
+import { SuggestionsByFileMap, extractData } from './data-fetcher'
+import { createExtensionLog } from './utils'
 
 const debounce = <T extends Function>(callback: T, delay: number) => {
 	let timer: NodeJS.Timeout
@@ -44,8 +45,10 @@ const loadDisposables = async (context: vscode.ExtensionContext) => {
 		}),
 		vscode.workspace.onDidChangeTextDocument(debounce((evt) => {
 			if (! translationsFiles.map(uri => uri.fsPath).includes(evt.document.fileName)) {
-				return;
+				return
 			}
+
+			extensionLog.debugLog("Translation file changed, reloading suggestions...")
 
 			const cachePool = createCache(context)
 			cachePool.clear(createDataCacheKey(vscode.Uri.file(evt.document.fileName)))
@@ -53,7 +56,22 @@ const loadDisposables = async (context: vscode.ExtensionContext) => {
 			context.subscriptions.forEach(disposable => disposable.dispose())
 			loadDisposables(context)
 		}, 3000)),
-	];
+		// Only works either on file creation through VSCODE or, through a drag and drop.
+		vscode.workspace.onDidCreateFiles(evt => {
+			evt.files.forEach(async (file) => {
+				const filename = file.path.slice(config.workspacePath.length + 1)
+
+				if (! minimatch(filename, config.translationsFilePattern)) {
+					return
+				}
+
+				extensionLog.debugLog("New translation file, adding to suggestions...")
+
+				context.subscriptions.forEach(disposable => disposable.dispose())
+				loadDisposables(context)
+			})
+		}),
+	]
 
 	context.subscriptions.push(...suggestionsProviderDisposables)
 }

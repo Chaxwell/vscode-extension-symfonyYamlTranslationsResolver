@@ -8,7 +8,7 @@ export const createExtensionLog = (outputChannel?: vscode.LogOutputChannel) => {
             outputChannel?.appendLine(message)
         },
         debugLog: (message: string) => {
-            console.debug(message)
+            console.log(message)
             outputChannel?.appendLine(message)
         },
     }
