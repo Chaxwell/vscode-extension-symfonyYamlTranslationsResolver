@@ -1,6 +1,11 @@
 import * as vscode from 'vscode'
 
-export const createExtensionLog = (outputChannel?: vscode.LogOutputChannel) => {
+export type ExtensionLogger = {
+    userLog: (message: string) => void
+    debugLog: (message: string) => void
+}
+
+export const createExtensionLogger = (outputChannel?: vscode.LogOutputChannel): ExtensionLogger => {
     return {
         userLog: (message: string) => {
             console.log(message)

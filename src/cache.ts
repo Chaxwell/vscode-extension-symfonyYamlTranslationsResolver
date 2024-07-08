@@ -1,10 +1,15 @@
 import * as vscode from 'vscode'
 import * as hashing from 'crypto'
-import { DATA_CACHE_KEY } from './constants'
+import { DATA_CACHE_KEY } from './constant'
 
-export type Cache = ReturnType<typeof createCache>
+export type Cache = {
+    get: <T>(key: string) => T | undefined
+    set: (key: string, value: any) => Thenable<void>
+    clear: (key: string) => Thenable<void>
+    clearAll: () => void
+}
 
-export const createCache = (context: vscode.ExtensionContext) => {
+export const createCache = (context: vscode.ExtensionContext): Cache => {
     return {
         get: <T>(key: string) => {
             return context.globalState.get<T>(key)
