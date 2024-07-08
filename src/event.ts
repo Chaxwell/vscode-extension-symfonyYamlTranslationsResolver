@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { minimatch } from 'minimatch'
 import { Cache, createDataCacheKey } from './cache'
 import { ExtensionLogger } from './util'
-import { reloadExtension } from './extensionLoader'
+import { reloadExtension } from './extension-loader'
 import { Configuration } from './configuration'
 
 export const createOnDidChangeTextDocument = (

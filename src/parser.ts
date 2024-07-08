@@ -1,9 +1,9 @@
 import { Parser, LineCounter } from 'yaml'
 import { Token, Document } from 'yaml/dist/parse/cst'
 import {PathOrFileDescriptor, readFileSync} from 'fs'
-import { traverseTree, TranslationNode } from './tree'
+import { traverseTree, TranslationNodeMap } from './tree'
 
-export const extractNodes = (filepath: PathOrFileDescriptor): TranslationNode[] => {
+export const extractNodes = (filepath: PathOrFileDescriptor): TranslationNodeMap => {
     const lineCounter = new LineCounter()
     const parser = new Parser(lineCounter.addNewLine)
     const tokens = parser.parse(
@@ -15,18 +15,18 @@ export const extractNodes = (filepath: PathOrFileDescriptor): TranslationNode[] 
     const document = getDocument(tokens)
 
     if (document === null) {
-        return []
+        return new Map()
     }
 
     if (document.value === undefined) {
-        return []
+        return new Map()
     }
 
     if (document.value.type !== 'block-map') {
-        return []
+        return new Map()
     }
 
-    const result: TranslationNode[] = []
+    const result: TranslationNodeMap = new Map()
     traverseTree(document.value, result, lineCounter.linePos)
 
     return result

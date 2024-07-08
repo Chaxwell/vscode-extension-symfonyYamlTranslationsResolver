@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { completionProvider, documentLinkProvider } from './provider'
 import { createCache } from './cache'
 import { getConfiguration } from './configuration'
-import { SuggestionsByFileMap, extractData } from './data-fetcher'
+import { loadFromFiles } from './suggestion-loader'
 import { createExtensionLogger } from './util'
 import { clearCache } from './command'
 import { createOnDidChangeTextDocument, createOnDidCreateFiles, createOnDidRenameFiles } from './event'
@@ -16,12 +16,8 @@ export const loadExtension = async (context: vscode.ExtensionContext) => {
 
 	const cachePool = createCache(context)
 	const config = getConfiguration(context)
-	const suggestionsByFile: SuggestionsByFileMap = new Map()
 	const translationsFiles = await vscode.workspace.findFiles(config.translationsFilePattern)
-
-	for (const fileUri of translationsFiles) {
-		suggestionsByFile.set(fileUri, extractData(cachePool, fileUri))
-	}
+	const suggestionsByFile = loadFromFiles(translationsFiles)
 
 	const suggestionsProviderDisposables = [
 		vscode.languages.registerDocumentLinkProvider(
@@ -67,14 +63,11 @@ export const loadExtension = async (context: vscode.ExtensionContext) => {
 	]
 
 	context.subscriptions.push(...suggestionsProviderDisposables)
+
+    logger.debugLog('symfonyYamlTranslationsResolver BETA VERSION - Initialized..')
 }
 
 export const reloadExtension = (context: vscode.ExtensionContext) => {
-    const logger = createExtensionLogger(
-        vscode.window.createOutputChannel(OUTPUT_CHANNEL, {log: true})
-    )
-    logger.debugLog('symfonyYamlTranslationsResolver BETA VERSION - Reloading..')
-
     context.subscriptions.forEach(disposable => disposable.dispose())
     loadExtension(context)
 }

@@ -2,9 +2,10 @@ import * as yaml from 'yaml'
 
 type BlockItem = yaml.CST.BlockMap['items'][0] | yaml.CST.CollectionItem
 type BlockCollection = yaml.CST.BlockMap | yaml.CST.BlockSequence | yaml.CST.FlowCollection
-export type TranslationNode = {key: string, value: string, line?: number, column?: number}
+export type TranslationNode = {key: string, text: string, line?: number, column?: number}
+export type TranslationNodeMap = Map<TranslationNode['key'], TranslationNode>
 
-export const traverseTree = (root: yaml.CST.BlockMap, storage: any[], getPosition: yaml.LineCounter['linePos']): void => {
+export const traverseTree = (root: yaml.CST.BlockMap, storage: TranslationNodeMap, getPosition: yaml.LineCounter['linePos']): void => {
     const nodeList: TranslationNode[] = []
     const nodeTraverser = createNodeTraverser(storage, getPosition)
 
@@ -95,21 +96,21 @@ class Node {
     }
 }
 
-const createNodeTraverser = (storage: TranslationNode[], getPosition: yaml.LineCounter['linePos']) => {
+const createNodeTraverser = (storage: TranslationNodeMap, getPosition: yaml.LineCounter['linePos']) => {
     const nodeTraverser = (node: Node, nodeList: TranslationNode[]): void => {
         const key = node.getKey()
-        const value = node.getData()
+        const text = node.getData()
 
-        if (key !== null || value !== null) {
-            if (value !== null) {
+        if (key !== null || text !== null) {
+            if (text !== null) {
                 if (nodeList.length === 0) {
-                    nodeList.push({key, value})
+                    nodeList.push({key, text})
                 } else {
                     const keys = nodeList.map(i => i.key).join('.') + '.' + key
-                    nodeList.push({key: keys, value})
+                    nodeList.push({key: keys, text})
                 }
             } else {
-                nodeList.push({key, value})
+                nodeList.push({key, text})
             }
         }
 
@@ -123,7 +124,7 @@ const createNodeTraverser = (storage: TranslationNode[], getPosition: yaml.LineC
                     vectorItem.line = getPosition(token.value.offset).line
                 }
 
-                storage.push(vectorItem)
+                storage.set(vectorItem.key, vectorItem)
             }
 
             nodeList.pop()

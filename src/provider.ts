@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Suggestion, SuggestionsByFileMap } from './data-fetcher';
+import { Suggestion, SuggestionsByFileMap } from './suggestion-loader';
 import { Configuration } from './configuration';
 
 export const documentLinkProvider = (config: Configuration, suggestionsByFile: SuggestionsByFileMap): vscode.DocumentLinkProvider => {
