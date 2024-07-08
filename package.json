@@ -6,8 +6,8 @@
     "name": "Chaxwell"
   },
   "license": "MIT-X11",
-  "description": "Alpha version",
-  "version": "0.9.1-alpha",
+  "description": "Beta version",
+  "version": "0.9.2-beta",
   "engines": {
     "vscode": "^1.85.0"
   },

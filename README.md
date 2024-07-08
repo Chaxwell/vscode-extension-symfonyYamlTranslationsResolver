@@ -1,3 +1,3 @@
-# Alpha version
+# Beta version (0.9.2)
 
-As this is still an alpha version, please do not report any bug *yet*
+Now using an actual YAML parser, there are still improvements to be made. (eg. cache)
