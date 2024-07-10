@@ -6,37 +6,47 @@ export const documentLinkProvider = (config: Configuration, suggestionsByFile: S
     return {
         provideDocumentLinks(document, token) {
             const result: vscode.DocumentLink[] = []
+            const regex = new RegExp(/'([\w\-\.]+?)'|"([\w\-\.]+?)"/, 'gi')
 
             for (let n = 0; n < document.lineCount; n++) {
                 const line = document.lineAt(n)
-                const matches = line.text.match(/(.*?)['"](.*?)['"]/)
-                const charactersTillMatch = matches?.at(1) ?? ""
-                const match = matches?.at(2) ?? ""
+                const matches = Array.from(line.text.matchAll(regex))
 
-                if (match === "") {
+                if (matches.length === 0) {
                     continue
                 }
 
-                for (const [file, suggestions] of suggestionsByFile) {
-                    if (! suggestions.has(match)) {
-                        continue
+                matches.forEach(matches => {
+                    const theMatch = matches?.at(1) ?? matches?.at(2) ?? ""
+
+                    if (theMatch === "") {
+                        return
                     }
 
-                    const suggestion = suggestions.get(match) as Suggestion
-                    const range = new vscode.Range(
-                        new vscode.Position(line.lineNumber, charactersTillMatch.length + 1),
-                        new vscode.Position(line.lineNumber, charactersTillMatch.length + match.length + 1)
-                    )
-                    const link = new vscode.DocumentLink(
-                        range,
-                        file.with({ fragment: `L${suggestion.line}, 1` })
-                    );
+                    for (const [file, suggestions] of suggestionsByFile) {
+                        const suggestion = suggestions.get(theMatch)
 
-                    const fileName = file.fsPath.slice(config.workspacePath.length + 1)
-                    link.tooltip = `${suggestion.text} <<${fileName}>>`
+                        if (suggestion === undefined) {
+                            continue
+                        }
 
-                    result.push(link);
-                }
+                        const startPosition = line.text.lastIndexOf(theMatch)
+                        const endPosition = startPosition + theMatch.length
+                        const range = new vscode.Range(
+                            new vscode.Position(n, startPosition),
+                            new vscode.Position(n, endPosition)
+                        )
+                        const link = new vscode.DocumentLink(
+                            range,
+                            file.with({ fragment: `L${suggestion.line}, 1` })
+                        );
+
+                        const fileName = file.fsPath.slice(config.workspacePath.length + 1)
+                        link.tooltip = `${suggestion.text} <${fileName}>`
+
+                        result.push(link);
+                    }
+                })
             }
 
             return result
