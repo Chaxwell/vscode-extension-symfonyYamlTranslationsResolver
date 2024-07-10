@@ -7,7 +7,7 @@
   },
   "license": "MIT-X11",
   "description": "Beta version",
-  "version": "0.9.2-beta",
+  "version": "0.9.3-beta",
   "engines": {
     "vscode": "^1.85.0"
   },
