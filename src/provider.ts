@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Suggestion, SuggestionsByFileMap } from './suggestion-loader';
+import { SuggestionsByFileMap } from './suggestion-loader';
 import { Configuration } from './configuration';
 
 export const documentLinkProvider = (config: Configuration, suggestionsByFile: SuggestionsByFileMap): vscode.DocumentLinkProvider => {
@@ -60,13 +60,10 @@ export const documentLinkProvider = (config: Configuration, suggestionsByFile: S
 export const completionProvider = (config: Configuration, suggestionsByFile: SuggestionsByFileMap): vscode.CompletionItemProvider => {
     return {
         provideCompletionItems: (document, position, token, context) => {
-            const range = document.lineAt(position).range
-            let input = document.getText(range)
-            const matches = input.match(/(.*?')(.+?)['"]/);
-            const charactersTillMatch = matches?.at(1) ?? ""
-            const match = matches?.at(2) ?? ""
+            const range = document.getWordRangeAtPosition(position)
+            const input = document.getText(range)
 
-            if (match === "") {
+            if (input.length < 2) {
                 return []
             }
 
@@ -77,7 +74,7 @@ export const completionProvider = (config: Configuration, suggestionsByFile: Sug
                 result.push(
                     ...Array
                     .from(suggestions.entries())
-                    .filter(([key, value]) => key.startsWith(match))
+                    .filter(([key, value]) => key.startsWith(input))
                     .map(([key, value]) => {
                         const result = new vscode.CompletionItem(
                             {
@@ -87,7 +84,7 @@ export const completionProvider = (config: Configuration, suggestionsByFile: Sug
                             vscode.CompletionItemKind.Text
                         )
 
-                        const posStart = new vscode.Position(position.line, charactersTillMatch.length)
+                        const posStart = new vscode.Position(position.line, range?.start.character ?? 1)
                         result.range = new vscode.Range(posStart, position)
                         result.insertText = key
 
