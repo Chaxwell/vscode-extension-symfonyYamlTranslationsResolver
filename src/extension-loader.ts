@@ -4,7 +4,7 @@ import { createCache } from './cache'
 import { getConfiguration } from './configuration'
 import { loadFromFiles } from './suggestion-loader'
 import { createExtensionLogger } from './util'
-import { clearCache } from './command'
+import { createClearCacheCommand } from './command'
 import { createOnDidChangeTextDocument, createOnDidCreateFiles, createOnDidRenameFiles } from './event'
 import { OUTPUT_CHANNEL } from './constant'
 
@@ -17,7 +17,7 @@ export const loadExtension = async (context: vscode.ExtensionContext) => {
 	const cachePool = createCache(context)
 	const config = getConfiguration(context)
 	const translationsFiles = await vscode.workspace.findFiles(config.translationsFilePattern)
-	const suggestionsByFile = loadFromFiles(translationsFiles)
+	const suggestionsByFile = await loadFromFiles(translationsFiles, cachePool)
 
 	const suggestionsProviderDisposables = [
 		vscode.languages.registerDocumentLinkProvider(
@@ -31,7 +31,7 @@ export const loadExtension = async (context: vscode.ExtensionContext) => {
 		),
 		vscode.commands.registerCommand(
 			'symfonyYamlTranslationsResolver.clearCache',
-			clearCache
+			createClearCacheCommand(cachePool, logger)
 		),
 		vscode.workspace.onDidChangeTextDocument(
 			debounce(

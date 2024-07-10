@@ -11,13 +11,13 @@ export const createOnDidChangeTextDocument = (
     cachePool: Cache,
     logger: ExtensionLogger
 ) => {
-    return (evt: vscode.TextDocumentChangeEvent) => {
+    return async (evt: vscode.TextDocumentChangeEvent) => {
         if (! translationsFiles.map(uri => uri.fsPath).includes(evt.document.fileName)) {
             return
         }
 
         logger.debugLog("Translation file changed, reloading suggestions...")
-        cachePool.clear(createDataCacheKey(evt.document.uri))
+        await cachePool.clear(createDataCacheKey(evt.document.uri))
         reloadExtension(context)
     }
 }

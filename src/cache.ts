@@ -12,17 +12,21 @@ export type Cache = {
 export const createCache = (context: vscode.ExtensionContext): Cache => {
     return {
         get: <T>(key: string) => {
-            return context.globalState.get<T>(key)
+            return context.workspaceState.get<T>(key)
         },
         set: (key: string, value: any) => {
-            return context.globalState.update(key, value)
+            return context.workspaceState.update(key, value)
         },
         clear: (key: string) => {
-            return context.globalState.update(key, undefined)
+            return context.workspaceState.update(key, undefined)
         },
         clearAll: () => {
-            context.globalState.keys().forEach(key => {
-                context.globalState.update(key, undefined)
+            context.workspaceState.keys().forEach(key => {
+                if (! key.startsWith(DATA_CACHE_KEY)) {
+                    return
+                }
+
+                context.workspaceState.update(key, undefined)
             })
         }
     }
