@@ -20,10 +20,6 @@ export const loadExtension = async (context: vscode.ExtensionContext) => {
 	const suggestionsByFile = await loadFromFiles(translationsFiles, cachePool, config)
 
 	const suggestionsProviderDisposables = [
-		vscode.languages.registerDocumentLinkProvider(
-			{ pattern: '**' },
-			documentLinkProvider(config, suggestionsByFile)
-		),
 		vscode.commands.registerCommand(
 			'symfonyYamlTranslationsResolver.clearCache',
 			createClearCacheCommand(cachePool, logger)
@@ -57,14 +53,25 @@ export const loadExtension = async (context: vscode.ExtensionContext) => {
 		),
 	]
 
-	if (config.enableAutocomplete) {
+	config.languageFilters.links.forEach(languageId => {
 		suggestionsProviderDisposables.push(
-			vscode.languages.registerCompletionItemProvider(
-				[{ pattern: '**' }],
-				completionProvider(config, suggestionsByFile),
-				"'"
+			vscode.languages.registerDocumentLinkProvider(
+				{ language: languageId },
+				documentLinkProvider(config, suggestionsByFile)
 			)
 		)
+	})
+
+	if (config.enableAutocomplete) {
+		config.languageFilters.autocomplete.forEach(languageId => {
+			suggestionsProviderDisposables.push(
+				vscode.languages.registerCompletionItemProvider(
+					[{ language: languageId }, ],
+					completionProvider(config, suggestionsByFile),
+					"'"
+				)
+			)
+		})
 	}
 
 	context.subscriptions.push(...suggestionsProviderDisposables)

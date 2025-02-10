@@ -37,6 +37,34 @@
           "type": "boolean",
           "default": true,
           "description": "Enable autocompletion for translation keys."
+        },
+        "symfonyYamlTranslationsResolver.languageFilters": {
+          "type": "object",
+          "description": "What languages are supported for the each feature. By default it will be PHP and Twig.",
+          "default": {
+            "autocomplete": ["php", "twig"],
+            "links": ["php", "twig"]
+          },
+          "items": {
+            "type": "object",
+            "properties": {
+              "autocomplete": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              }
+            }
+          },
+          "uniqueItems": true
         }
       }
     },
