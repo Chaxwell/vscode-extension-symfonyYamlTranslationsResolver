@@ -32,6 +32,11 @@
           "type": "string",
           "default": null,
           "description": "Locale of the user. By default it will be retrieved from VSCode settings. It's used when a translation key is found in multiple files in order to open the file of the user's language (when following the link in the editor). Should be RFC 5646 compliant."
+        },
+        "symfonyYamlTranslationsResolver.enableAutocomplete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable autocompletion for translation keys."
         }
       }
     },

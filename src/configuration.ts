@@ -5,6 +5,7 @@ export type Configuration = {
     workspacePath: string
     translationsFilePattern: string
     locale: string
+    enableAutocomplete: boolean
 }
 
 export const getConfiguration = (context: vscode.ExtensionContext): Configuration => {
@@ -13,7 +14,8 @@ export const getConfiguration = (context: vscode.ExtensionContext): Configuratio
     const result = {
         workspacePath: vscode.workspace.workspaceFolders?.[0].uri.path ?? "",
         translationsFilePattern: `translations/**/*.{yml,yaml}`,
-        locale: extractFileExtensionFromLocale(configResolver.get('locale') ?? vscode.env.language)
+        locale: extractFileExtensionFromLocale(configResolver.get('locale') ?? vscode.env.language),
+        enableAutocomplete: new Boolean(configResolver.get('enableAutocomplete') ?? true).valueOf()
     }
 
     return result
