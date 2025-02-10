@@ -17,7 +17,7 @@ export const loadExtension = async (context: vscode.ExtensionContext) => {
 	const cachePool = createCache(context)
 	const config = getConfiguration(context)
 	const translationsFiles = await vscode.workspace.findFiles(config.translationsFilePattern)
-	const suggestionsByFile = await loadFromFiles(translationsFiles, cachePool)
+	const suggestionsByFile = await loadFromFiles(translationsFiles, cachePool, config)
 
 	const suggestionsProviderDisposables = [
 		vscode.languages.registerDocumentLinkProvider(
