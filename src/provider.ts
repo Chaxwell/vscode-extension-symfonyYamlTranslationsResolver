@@ -58,6 +58,19 @@ export const documentLinkProvider = (config: Configuration, suggestionsByFile: S
 }
 
 export const completionProvider = (config: Configuration, suggestionsByFile: SuggestionsByFileMap): vscode.CompletionItemProvider => {
+    const suggestionsByFileForLocale: SuggestionsByFileMap = new Map()
+
+    for (const [file, suggestions] of suggestionsByFile) {
+        const matches = file.fsPath.match(/\.([a-z]+)\./i)
+
+        if (
+            matches?.at(1) === config.locale
+            || matches?.at(1) === null
+        ) {
+            suggestionsByFileForLocale.set(file, suggestions)
+        }
+    }
+
     return {
         provideCompletionItems: (document, position, token, context) => {
             const range = document.getWordRangeAtPosition(position)
@@ -68,17 +81,17 @@ export const completionProvider = (config: Configuration, suggestionsByFile: Sug
             }
 
             const result = [];
-            for (const [file, suggestions] of suggestionsByFile) {
+            for (const [file, suggestions] of suggestionsByFileForLocale) {
                 const fileName = file.fsPath.slice(config.workspacePath.length + 1)
 
                 result.push(
                     ...Array
                     .from(suggestions.entries())
-                    .filter(([key, value]) => key.startsWith(input))
+                    .filter(([key, value]) => value.text.toLowerCase().includes(input.toLowerCase()))
                     .map(([key, value]) => {
                         const result = new vscode.CompletionItem(
                             {
-                                label: key,
+                                label: value.text,
                                 description: value.text,
                             },
                             vscode.CompletionItemKind.Text
@@ -88,7 +101,7 @@ export const completionProvider = (config: Configuration, suggestionsByFile: Sug
                         result.range = new vscode.Range(posStart, position)
                         result.insertText = key
 
-                        const documentation = new vscode.MarkdownString(`${value.text}<br><br>*${fileName}*`);
+                        const documentation = new vscode.MarkdownString(`${value.text}<br><br>${key}<br><br>*${fileName}*`);
                         documentation.supportHtml = true
 
                         result.documentation = documentation
