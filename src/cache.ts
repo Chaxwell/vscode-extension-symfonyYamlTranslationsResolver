@@ -1,10 +1,11 @@
 import * as vscode from 'vscode'
 import * as hashing from 'crypto'
 import { DATA_CACHE_KEY } from './constant'
+import { JsonStringifyable } from './string'
 
 export type Cache = {
-    get: <T>(key: string) => T | undefined
-    set: (key: string, value: any) => Thenable<void>
+    get: <T extends JsonStringifyable>(key: string) => T | undefined
+    set: (key: string, value: JsonStringifyable) => Thenable<void>
     clear: (key: string) => Thenable<void>
     clearAll: () => void
 }
@@ -14,7 +15,7 @@ export const createCache = (context: vscode.ExtensionContext): Cache => {
         get: <T>(key: string) => {
             return context.workspaceState.get<T>(key)
         },
-        set: (key: string, value: any) => {
+        set: (key: string, value: JsonStringifyable) => {
             return context.workspaceState.update(key, value)
         },
         clear: (key: string) => {

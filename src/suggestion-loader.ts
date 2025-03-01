@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import { extractNodes } from './parser'
 import { Cache, createDataCacheKey } from './cache'
 import { Configuration } from './configuration'
+import { mapParser, mapStringifier } from './string'
 
 export type Suggestion = {line?: number, text: string}
 export type SuggestionMap = Map<string, Suggestion>
@@ -11,13 +12,17 @@ export const loadFromFiles = async (files: vscode.Uri[], cache: Cache, config: C
     const result: SuggestionsByFileMap = new Map()
 
     for (const fileUri of sortWithFilesFromLocaleFirst(files, config)) {
-        const cachedSuggestionsForFile = cache.get<SuggestionMap>(fileUri.fsPath)
+        const nodesAsString = cache.get<string>(createDataCacheKey(fileUri))
+        let nodes: SuggestionMap;
 
-        if (cachedSuggestionsForFile === undefined) {
-            await cache.set(createDataCacheKey(fileUri), extractNodes(fileUri.fsPath))
+        if (nodesAsString === undefined) {
+            nodes = extractNodes(fileUri.fsPath)
+            await cache.set(createDataCacheKey(fileUri), JSON.stringify(nodes, mapStringifier))
+        } else {
+            nodes = JSON.parse(nodesAsString, mapParser)
         }
 
-		result.set(fileUri, cache.get(createDataCacheKey(fileUri)) as SuggestionMap)
+		result.set(fileUri, nodes)
 	}
 
     return result
